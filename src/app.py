@@ -19,5 +19,6 @@ st.navigation([
     page_explore,
     st.Page(views.group_page, title="Baseline vs music", icon=":material/compare_arrows:", url_path="group"),
     st.Page(views.listen_page, title="Listen", icon=":material/headphones:", url_path="listen"),
+    st.Page(views.generate_page, title="Generate", icon=":material/auto_awesome:", url_path="generate"),
     st.Page(views.about_page, title="About", icon=":material/info:", url_path="about"),
 ]).run()

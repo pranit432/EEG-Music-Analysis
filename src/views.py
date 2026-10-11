@@ -4,13 +4,15 @@ Importing this module has no side effects, so each page can be tested on its own
 from pathlib import Path
 
 import altair as alt
+import numpy as np
 import pandas as pd
 import streamlit as st
 
 from band_power import BAD_CH_MAD, BANDS, REJECT_UV, clean, summarise
 from group_analysis import METRICS, TRIAL, music_span
 from load_edf import load
-from sonify import make_notes, render, subject_features, window_features
+import generate
+from sonify import make_notes, render, subject_features, to_unit, window_features
 
 ROOT = Path(__file__).parent.parent
 DATA = ROOT / "data/tempo/music1"
@@ -84,6 +86,23 @@ def sonify_features(sub):
 def render_cached(sub, rec):
     feats, ranges = sonify_features(sub)
     return render(sub, rec, feats, ranges)
+
+
+def code_stamp():
+    """Last-modified time of the generator and audio analysis, so cached results are redone when either is edited."""
+    src = Path(__file__).parent
+    return max((src / f).stat().st_mtime for f in ("generate.py", "analyze_audio.py", "sonify.py"))
+
+
+@st.cache_data(show_spinner="Generating the piece and analysing its audio...", max_entries=50)
+def generate_cached(sub, rec, stamp):
+    import analyze_audio  # imported here because librosa is slow to load and only this page needs it
+    feats, ranges = sonify_features(sub)
+    r = generate.render(sub, rec, feats, ranges)
+    stem = Path(r["stem"])
+    return {**r, "analysis": analyze_audio.analyze(stem),
+            "mix": stem.with_suffix(".wav").read_bytes(), "melody_wav": Path(f"{stem}_melody.wav").read_bytes(),
+            "alpha": feats[rec][:, 0], "ratio": to_unit(feats[rec][:, 1], *ranges[1])}
 
 
 # ------------------------------------------------------------------ shared state / URL
@@ -291,6 +310,74 @@ def listen_page():
                 color=alt.Color("recording:N", legend=alt.Legend(orient="top", title=None)),
                 tooltip=["recording", "bar", alt.Tooltip(f"{field}:Q", format=".0f")]), width="stretch")
     st.caption("The mapping from brain wave to note is a creative choice (sonification), not a research finding.")
+
+
+def generate_page():
+    st.header("Generate")
+    st.write("A fuller piece than *Listen*: a melody, a bass line and chords. **The beta/alpha ratio over the whole recording sets the tempo, "
+             "alpha sets how high the melody sits, and a window with relatively high beta/alpha gets twice as many notes.** "
+             "The chords cycle through a fixed progression and do not come from the EEG.")
+    st.info("This music is generated from the EEG using a chosen mapping. It is **not** what the participants heard.")
+    subs = subjects()
+    c1, c2 = st.columns([1, 1])
+    sub = c1.selectbox("Subject", subs, index=subs.index(DEFAULT_SUBJECT), key="gen_sub")
+    feats, _ = sonify_features(sub)
+    options = list(feats)
+    rec = c2.selectbox("Recording", options, index=options.index("E01") if "E01" in options else 0, key=f"gen_rec_{sub}",
+                       format_func=lambda r: "Baseline" if r == "BS" else r)
+
+    g = generate_cached(sub, rec, code_stamp())
+    a = g["analysis"]
+    st.audio(g["mix"], format="audio/wav")
+    d1, d2, _ = st.columns([1, 1, 3])
+    d1.download_button("Piece (WAV)", g["mix"], f"generate_{sub}_{rec}.wav", "audio/wav", key="gen_dl_mix", icon=":material/download:")
+    d2.download_button("Melody only", g["melody_wav"], f"generate_{sub}_{rec}_melody.wav", "audio/wav", key="gen_dl_mel", icon=":material/download:")
+
+    st.subheader("Does the audio match what the EEG asked for?")
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Tempo from EEG", f"{a['intended_bpm']:.0f} BPM", border=True)
+    m2.metric("Tempo found in the audio", f"{a['detected_bpm']:.0f} BPM", border=True,
+              help="Estimated from the finished audio's rhythm, without telling the estimator the answer.")
+    m3.metric("Alpha read back from pitch", "n/a" if np.isnan(a["alpha_rho"]) else f"{a['alpha_rho']:.2f}", border=True,
+              help="Rank correlation (1 is perfect) between each bar's alpha and the lowest melody note found in that bar's audio. "
+                   "Below 1 because notes snap to a five-note scale. n/a if the melody never moved.")
+    m4.metric("Busy bars spotted", f"{a['busy_found']} of {a['busy_written']}" if a["busy_written"] else "None written", border=True,
+              help="Of the bars written busy (eight notes), how many an onset detector also counted as busy. "
+                   f"This recording has {a['bars']} bars in all.")
+    if a["tempo_err_pct"] < 5:
+        st.success("The detected tempo matches the tempo written from the EEG.")
+    elif a["tempo_err_folded_pct"] < 5:
+        st.success("The detected tempo is half or double the written tempo. Tempo estimators often pick the wrong beat level, "
+                   "so this counts as a match.")
+    else:
+        st.warning(f"The detected tempo does not match ({a['tempo_err_pct']:.0f}% off, and still "
+                   f"{a['tempo_err_folded_pct']:.0f}% off allowing half or double). Estimators can lock on to a different beat level "
+                   "in short or dense pieces.")
+
+    st.subheader("What the EEG did to the music")
+    bars = pd.DataFrame({"bar": range(1, g["bars"] + 1), "beta/alpha": g["ratio"], "alpha": g["alpha"], "pitch found": a["bar_pitch"]})
+    bars["texture"] = ["Eighth notes" if r > generate.DENSE_AT else "Quarter notes" for r in bars["beta/alpha"]]
+    left, right = st.columns(2)
+    with left:
+        st.altair_chart(alt.layer(
+            alt.Chart(bars).mark_bar().encode(
+                x=alt.X("bar:O", title="Bar (one 2 s EEG window each)", axis=alt.Axis(labelAngle=0)),
+                y=alt.Y("beta/alpha:Q", title="Beta/alpha, within this subject's range", scale=alt.Scale(domain=[0, 1])),
+                color=alt.Color("texture:N", scale=alt.Scale(domain=["Quarter notes", "Eighth notes"], range=[GREY, ACCENT]),
+                                legend=alt.Legend(orient="top", title=None)),
+                tooltip=["bar", alt.Tooltip("beta/alpha:Q", format=".2f"), alt.Tooltip("alpha:Q", format=".3f"), "texture"]),
+            alt.Chart(pd.DataFrame({"y": [generate.DENSE_AT]})).mark_rule(strokeDash=[4, 3], color="#f1f3f5").encode(y="y:Q")),
+            width="stretch")
+        st.caption("Bars above the dashed line play twice as many notes.")
+    with right:
+        st.altair_chart(alt.Chart(bars.dropna(subset=["pitch found"])).mark_circle(size=70, color=ACCENT).encode(
+            x=alt.X("alpha:Q", title="Alpha in the bar (relative)", scale=alt.Scale(zero=False)),
+            y=alt.Y("pitch found:Q", title="Lowest melody note found in the audio (MIDI)", scale=alt.Scale(zero=False)),
+            tooltip=["bar", alt.Tooltip("alpha:Q", format=".3f"), alt.Tooltip("pitch found:Q", format=".0f")]), width="stretch")
+        st.caption("Each dot is one bar. Dots rising to the right mean the alpha can be read back from the audio.")
+    st.caption("This checks how much of the EEG survives into the audio, not whether the mapping means anything: the tempo, pitch and "
+               "busy-bar rules are deterministic, so a high score shows they are audible, not that they are findings about the brain. "
+               "The mapping from brain wave to music is a creative choice, not a research finding.")
 
 
 def about_page():

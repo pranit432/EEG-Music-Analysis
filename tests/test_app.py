@@ -61,6 +61,17 @@ def test_listen_page_renders_baseline_slower_music_than_baseline_is_faster():
     assert tempos[0] > 120 > 90 > tempos[1]  # S09: fast baseline, slower music
 
 
+def test_generate_page_checks_the_audio_against_the_eeg():
+    at = run_page("generate_page")
+    assert not at.exception
+    m = metrics(at)  # defaults to S09 E01
+    assert 70 < float(m["Tempo from EEG"].split()[0]) < 85
+    detected = float(m["Tempo found in the audio"].split()[0])
+    assert abs(detected - 76) < 5  # S09 E01 is detected at its written tempo
+    assert float(m["Alpha read back from pitch"]) > 0.7
+    assert m["Busy bars spotted"] == "1 of 1"  # S09 E01 has a single busy bar
+
+
 def test_about_page_counts_the_data():
     at = run_page("about_page")
     assert not at.exception

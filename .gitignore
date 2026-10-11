@@ -11,3 +11,6 @@ __pycache__/
 
 # local tooling
 .claude/
+
+# generated audio, plus the JSON written beside it by src/generate.py
+results/generate_*
