@@ -16,7 +16,6 @@ A band-power analysis of EEG recorded while people listen to music, with a Strea
 - [Run it](#run-it)
 - [Reproduce the analysis](#reproduce-the-analysis)
 - [Project layout](#project-layout)
-- [Deploying](#deploying)
 
 ## Results
 
@@ -137,7 +136,3 @@ results/               saved statistics (CSV) used by the app
 data/tempo/music1/     EEG recordings, one folder per subject
 .streamlit/config.toml dark theme and app settings
 ```
-
-## Deploying
-
-The app runs on [Streamlit Community Cloud](https://share.streamlit.io): choose this repository, branch `main` and main file `src/app.py`. Generated audio is written to `results/` at run time and is not stored in the repository.
