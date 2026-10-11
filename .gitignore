@@ -1,0 +1,13 @@
+# not used by the app
+data/emotions/
+data/tempo/music2/
+data/tempo/tempo_peek/
+
+# generated at run time
+results/*.wav
+results/*.mid
+__pycache__/
+.pytest_cache/
+
+# local tooling
+.claude/
