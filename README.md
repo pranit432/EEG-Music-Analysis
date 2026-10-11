@@ -1,6 +1,6 @@
 # Effect of Music on EEG Brain Waves
 
-A band-power analysis of EEG recorded while people listen to music, with a Streamlit app to explore the results and a small demo that turns EEG into sound.
+A band-power analysis of EEG recorded while people listen to music, with a Streamlit app to explore the results and two demos that turn EEG into music.
 
 **Question.** Does listening to music change brain-wave power compared with a silent baseline?
 
@@ -38,11 +38,12 @@ Each subject's baseline is compared with the mean of their own music trials (18 
 
 ## The app
 
-Run it and use the sidebar to move between four pages:
+Run it and use the sidebar to move between five pages:
 
 - **Explore a recording:** pick a subject and a music trial, and see band power next to that subject's baseline, plus a time course over the recording. A *Preprocessing* menu lets you change the artifact thresholds and see how sensitive a result is.
 - **Baseline vs music:** the group result for any metric, with a paired plot, optional subject highlight, the full statistics table, the controls, and a button to recompute everything from the raw EEG.
 - **Listen:** the sonification demo (below).
+- **Generate:** a fuller piece with melody, bass and chords from one recording, checked against the EEG by analysing the audio (below).
 - **About:** method, data, how this relates to the original proposal, and the limits.
 
 Views are linkable, for example `?subject=S09` on the Explore page.
@@ -58,6 +59,29 @@ The Listen page turns EEG into a short tune. Each clean 2 s window becomes one b
 | Signal amplitude | Loudness |
 
 Ranges are scaled across each subject's recordings, so BPM values cannot be compared between subjects. **The audio is generated from the EEG with a mapping I chose. It is not the music the participants heard** (the dataset contains brain signals only), and the mapping is a creative choice, not a finding. Tunes can be downloaded as WAV or MIDI.
+
+### Generate
+
+A fuller piece than *Listen*, built from one recording: a melody, a bass line and chords.
+
+| EEG measure | Music |
+|---|---|
+| Mean beta/alpha of the whole recording | One fixed tempo (60-140 BPM, scaled per subject) |
+| Relative alpha in a 2 s window | How high the melody sits (same C major pentatonic notes) |
+| Relatively high beta/alpha in a window | Eighth notes instead of quarter notes, and a brighter sound |
+| Amplitude | Loudness |
+
+Each clean 2 s window becomes one 4/4 bar. A bar plays for four beats, so a piece is not the same length as the recording, and windows rejected as noisy are skipped. The chords cycle I-vi-IV-V in C major and are **not** derived from the EEG. As with *Listen*, this is not the music the participants heard, and the mapping is a creative choice.
+
+The page also checks the finished audio against the EEG, as a round trip:
+
+- **Tempo:** a librosa estimate on the audio (40-200 BPM), compared with the written tempo. Estimators sometimes lock onto a different beat level, so half or double the written tempo counts as a match.
+- **Alpha:** the rank correlation between each bar's alpha and the lowest melody note a pitch tracker finds in that bar. It is not defined when the melody never moves.
+- **Busy bars:** how many bars written as eighth-note bars an onset detector also counts as busy.
+
+Example for S09, trial E01: written 76.5 BPM, detected 76.0 BPM, alpha recovered at 0.88, and all 20 bars classified correctly. The S09 baseline is a miss for tempo: written 138.8 BPM, detected 92.3 BPM.
+
+These checks show how much of the EEG survives into the audio. The tempo, pitch and busy-bar rules are deterministic, so a high score shows the changes are audible, not that they mean anything about the brain. "Busy" is also relative to each subject's own range across their recordings, so it is not an absolute measure of alertness.
 
 ## How it works
 
@@ -98,7 +122,7 @@ python -m streamlit run src/app.py
 
 The app opens at `http://localhost:8501`. On Windows PowerShell, run the two commands on separate lines (`&&` is not supported in older versions).
 
-Tests (six page-level checks, run with Streamlit's `AppTest`):
+Tests (15 in all: seven page-level checks run with Streamlit's `AppTest`, and eight checks of the audio code on synthetic signals):
 
 ```
 pip install pytest
@@ -117,6 +141,8 @@ python src/band_power.py S09           # band power for one subject, all recordi
 python src/group_analysis.py           # baseline vs music, writes results/group_*.csv and a plot
 python src/controls.py                 # drift and eyes-closed controls
 python src/sonify.py S09 BS E01        # writes results/sonify_S09_*.wav and .mid
+python src/generate.py S09 BS E01      # full piece, writes results/generate_S09_*.wav and .json
+python src/analyze_audio.py S09 BS E01 # checks the generated audio against the EEG (run generate.py first)
 ```
 
 The app's *Recompute* button on the group page runs the group analysis and the controls for you.
@@ -125,13 +151,16 @@ The app's *Recompute* button on the group page runs the group analysis and the c
 
 ```
 src/app.py             entry point: page config and navigation
-src/views.py           the four pages and cached data access
+src/views.py           the five pages and cached data access
 src/band_power.py      channel and window cleaning, band power
 src/group_analysis.py  baseline-vs-music statistics and plot
 src/controls.py        drift and eyes-closed controls
-src/sonify.py          EEG to MIDI and WAV
+src/sonify.py          EEG to MIDI and WAV (the Listen page)
+src/generate.py        EEG to a full piece with melody, bass and chords (the Generate page)
+src/analyze_audio.py   reads the generated audio back and checks it against the EEG
 src/load_edf.py        recording loader
 tests/test_app.py      page-level tests
+tests/test_audio.py    tests of the generator and audio checks on synthetic signals
 results/               saved statistics (CSV) used by the app
 data/tempo/music1/     EEG recordings, one folder per subject
 .streamlit/config.toml dark theme and app settings

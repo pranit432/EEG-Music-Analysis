@@ -400,6 +400,11 @@ def about_page():
         st.latex(r"\text{FAA} = \ln P_\alpha(\mathrm{F4}) - \ln P_\alpha(\mathrm{F3})")
     st.markdown("**Main result.** Alpha power is higher, and the beta/alpha ratio and gamma power are lower, during music "
                 "(16 of 18 subjects show higher alpha).")
+    st.markdown("**Music from the EEG.** *Listen* turns a recording into a short tune (alpha sets pitch, beta/alpha sets tempo, amplitude "
+                "sets loudness). *Generate* builds a fuller piece with melody, bass and chords from one recording, then analyses its own "
+                "audio to check how much of the EEG can be recovered from it: the tempo, the alpha from the melody's pitch, and which bars "
+                "are busy. The chords are not derived from the EEG. This music is not what the participants heard, and the mapping is a "
+                "creative choice.")
     st.info("**How this relates to the original proposal.** The proposal planned to compare music genres and to report attention and "
             "relaxation indices. The public dataset used here varies music *tempo*, and which trial used which tempo or piece is not "
             "recorded in the files, so neither genre nor tempo conditions can be compared. What this analysis shows is music versus a "
@@ -413,4 +418,5 @@ def about_page():
                "- Trial tempo labels aren't in the files, so tempo conditions can't be compared and all music trials are pooled.\n"
                "- Electrode quality varies. Frontal channels (F7, F8, Fp1, Fp2) are dropped as noisy in about 20% of recordings, and "
                "occipital O1 and O2 in about 10%, so regional results rest on different channels in different recordings.\n"
-               "- The sonification mapping is a creative choice.")
+               "- The mappings from EEG to music (Listen and Generate) are creative choices. Generate's audio check shows the changes are "
+               "audible, since its rules are deterministic, not that they mean anything about the brain.")
