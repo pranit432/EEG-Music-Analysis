@@ -19,7 +19,7 @@ from load_edf import load
 
 ROOT = Path(__file__).parent.parent
 FRONTAL = ["Fp1", "Fp2", "F3", "Fz", "F4", "F7", "F8"]
-POSTERIOR = ["P3", "P4", "T5", "T6"]  # O1/O2 are bad in most recordings
+POSTERIOR = ["O1", "O2", "P3", "P4", "T5", "T6"]  # channels dropped as noisy in a recording are skipped
 BLINK_UV = 100  # Fp window peak-to-peak above this counts as containing a blink
 
 

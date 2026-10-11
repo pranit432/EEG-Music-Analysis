@@ -225,8 +225,9 @@ def group_page():
                     "wilcoxon_p": st.column_config.NumberColumn("p", format="%.4f"),
                     "a_mean": st.column_config.NumberColumn("A mean", format="%.3f"),
                     "b_mean": st.column_config.NumberColumn("B mean", format="%.3f")})
-                st.caption("The alpha rise is already present in the first music trial, with no trend across trials and no drop in blink "
-                           "activity, so simple drift or closed eyes don't explain it. Neither can be fully ruled out.")
+                st.caption("Drift: the alpha rise is already present in the first music trial, with no trend across trials, so slow drift "
+                           "over the session doesn't explain it. Closed eyes: blink activity did not drop, but alpha rose more at the back of "
+                           "the head than at the front, which is also what closing the eyes does, so this explanation is not ruled out.")
 
     with st.expander("Recompute from the raw EEG"):
         st.write("Re-runs the group analysis and the controls on all 18 subjects (about 30 seconds).")
@@ -323,5 +324,6 @@ def about_page():
                "- The baseline protocol (eyes open or closed, instructions) isn't documented, so a baseline-vs-music difference can't be fully "
                "separated from other differences between the recordings.\n"
                "- Trial tempo labels aren't in the files, so tempo conditions can't be compared and all music trials are pooled.\n"
-               "- Several channels (O1 and O2 in particular) are often noisy, so posterior results rest on few channels.\n"
+               "- Electrode quality varies. Frontal channels (F7, F8, Fp1, Fp2) are dropped as noisy in about 20% of recordings, and "
+               "occipital O1 and O2 in about 10%, so regional results rest on different channels in different recordings.\n"
                "- The sonification mapping is a creative choice.")
