@@ -248,6 +248,8 @@ def listen_page():
     st.write("Each clean 2 s EEG window becomes one bar of four notes. **Higher alpha means higher pitch, a higher beta/alpha ratio means "
              "a faster tempo, and larger amplitude means louder.** Ranges are scaled across the subject's recordings, so differences "
              "between recordings are audible.")
+    st.info("These tunes are generated from the EEG using a chosen mapping. They are **not** the music the participants heard, "
+            "and the recordings (Baseline, E01, E02...) contain brain signals only.")
     subs = subjects()
     sub = st.selectbox("Subject", subs, index=subs.index(DEFAULT_SUBJECT), key="lis_sub",
                        help="S09 has the biggest baseline-vs-music contrast; S01 has almost none.")
