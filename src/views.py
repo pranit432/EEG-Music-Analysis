@@ -310,6 +310,13 @@ def about_page():
         st.latex(r"\text{FAA} = \ln P_\alpha(\mathrm{F4}) - \ln P_\alpha(\mathrm{F3})")
     st.markdown("**Main result.** Alpha power is higher, and the beta/alpha ratio and gamma power are lower, during music "
                 "(16 of 18 subjects show higher alpha).")
+    st.info("**How this relates to the original proposal.** The proposal planned to compare music genres and to report attention and "
+            "relaxation indices. The public dataset used here varies music *tempo*, and which trial used which tempo or piece is not "
+            "recorded in the files, so neither genre nor tempo conditions can be compared. What this analysis shows is music versus a "
+            "silent baseline, with all music trials pooled. Only EEG markers were measured (no reaction-time, memory or stress-rating "
+            "data), so relaxation is inferred from alpha and beta/alpha, and the attention marker (theta/beta) showed no change. "
+            "Comparing genres or tempos, ideally with a behavioural measure alongside the EEG, is the next step and needs a dataset "
+            "or experiment with labelled conditions.")
     st.warning("**Limits**\n"
                "- The baseline protocol (eyes open or closed, instructions) isn't documented, so a baseline-vs-music difference can't be fully "
                "separated from other differences between the recordings.\n"
