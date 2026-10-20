@@ -1,5 +1,7 @@
 # Effect of Music on EEG Brain Waves
 
+[![Tests](https://github.com/pranit432/EEG-Music-Analysis/actions/workflows/tests.yml/badge.svg)](https://github.com/pranit432/EEG-Music-Analysis/actions/workflows/tests.yml)
+
 A band-power analysis of EEG recorded while people listen to music, with a Streamlit app to explore the results and two demos that turn EEG into music.
 
 **Question.** Does listening to music change brain-wave power compared with a silent baseline?
